@@ -1,0 +1,10 @@
+
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hp_math"
+description = "Simple script for SAR analysis."
+readme = "README.md"
+version = "0.0.1"
