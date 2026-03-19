@@ -3,51 +3,30 @@ import numpy as np
 import pandas as pd
 
 from tqdm import tqdm
-#from numba import njit, prange
+from numba import njit, prange
 
 from multiprocessing import Pool
 
-#@njit(parallel=True)
-def paralell_fractal_generation(c):
-
+@njit(parallel=True)
+def compute_par(complex_values):
+        
     N = 100
     k = 100
 
     c_const = -2.1+ (-1.35j)
 
-    iter = 0
-    while (iter < N) and (np.abs(c) < k):
-        c = np.sin(c) + c_const
-        iter += 1
+    iter_lst = np.zeros(len(complex_values))
 
-    return iter
+    for idx in prange(len(complex_values)):
 
-#@njit(parallel=True)
-def compute_sequential(lims_x, lims_y, n_pts = 1000):
-
-    real_part = np.linspace(-lims_x, lims_x, n_pts)
-    imag_part = np.linspace(-lims_y, lims_y, n_pts)
-
-    X, Y = np.meshgrid(real_part, imag_part)
-
-    complex_lattice = X + 1j*Y
-    complex_values = complex_lattice.flatten()
-    
-    N = 100
-    k = 100
-
-    c_const = -2.1+ (-1.35j)
-
-    iter_lst = []
-
-    for c in complex_values:
+        c = complex_values[idx]
         iter = 0
         while (iter < N) and (np.abs(c) < k):
             c = np.sin(c) + c_const
             iter += 1
 
-        iter_lst.append(iter)
-
+        iter_lst[idx] = iter
+    
     return iter_lst
 
 def compute_parallel(lims_x, lims_y, n_pts = 1000):
@@ -60,11 +39,15 @@ def compute_parallel(lims_x, lims_y, n_pts = 1000):
     complex_lattice = X + 1j*Y
     complex_values = complex_lattice.flatten()
 
-    with Pool(processes=2) as p:
 
-        out = p.map(paralell_fractal_generation, complex_values) 
+    t = time.time()
 
-    return out
+    _ = compute_par(complex_values)
+
+    total = time.time() - t
+
+    return total
+
 
 def collect_times_for_varying_computations(l_xy_max, n_pts_max, save_fl):
 
@@ -91,7 +74,7 @@ def collect_times_for_varying_computations(l_xy_max, n_pts_max, save_fl):
     return pandata
 
 def main():
-    sv_file = "/Users/johannesbauer/Documents/Coding/hp_mathematics/timing_results/fractal_runs/cpu_p_2_run.csv"
+    sv_file = "/Users/johannesbauer/Documents/Coding/hp_mathematics/timing_results/fractal_runs/cpu_p_4_run.csv"
     out = collect_times_for_varying_computations(100, 500, sv_file)
 
 if __name__ == "__main__":

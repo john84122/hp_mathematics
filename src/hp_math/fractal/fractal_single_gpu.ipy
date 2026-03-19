@@ -1,55 +1,19 @@
-'''
-Sequential code for fractal generation.
-'''
 
 import time
 import numpy as np
-from tqdm import tqdm
+from numba import njit, prange
 
-def compute_sequential(lims_x, lims_y, n_pts = 1000):
+@njit(parallel=True)
+def paralell_fractal_generation(c):
 
-    real_part = np.linspace(-lims_x, lims_x, n_pts)
-    imag_part = np.linspace(-lims_y, lims_y, n_pts)
-
-    X, Y = np.meshgrid(real_part, imag_part)
-
-    complex_lattice = X + 1j*Y
-    complex_values = complex_lattice.flatten()
-    
     N = 100
     k = 100
 
     c_const = -2.1+ (-1.35j)
 
-    iter_lst = []
+    iter = 0
+    while (iter < N) and (np.abs(c) < k):
+        c = np.sin(c) + c_const
+        iter += 1
 
-    for c in complex_values:
-        iter = 0
-        while (iter < N) and (np.abs(c) < k):
-            c = np.sin(c) + c_const
-            iter += 1
-
-        iter_lst.append(iter)
-
-    return iter_lst
-
-
-def time_computation(iter_val, **kwargs):
-    l_x = kwargs.get("lims_x", 1000)
-    l_y = kwargs.get("lims_y", 1000)
-    n_pts = kwargs.get("n_pts", 100)
-
-    t = time.time()
-
-    compute_sequential(l_x, l_y, n_pts)
-
-    total = time.time - t
-
-    return total
-
-
-def main():
-    pass
-
-if __name__ == "__main__":
-    main()
+    return iter
