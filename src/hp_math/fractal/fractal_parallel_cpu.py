@@ -1,11 +1,10 @@
 import time
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 
 from tqdm import tqdm
-from numba import njit, prange
-
-from multiprocessing import Pool
+from numba import njit, prange, set_num_threads
 
 @njit(parallel=True)
 def compute_par(complex_values):
@@ -42,14 +41,24 @@ def compute_parallel(lims_x, lims_y, n_pts = 1000):
 
     t = time.time()
 
-    _ = compute_par(complex_values)
+    d_image = compute_par(complex_values)
 
+    iter_vals = np.array(d_image).reshape(complex_lattice.shape)
+
+
+    # Code to check whether the fractal was actually formed.
+    #plt.imshow(iter_vals)
+    #plt.savefig("sine_wave_cpu.png", bbox_inches='tight')
+    #assert 1 == 0
     total = time.time() - t
 
     return total
 
 
 def collect_times_for_varying_computations(l_xy_max, n_pts_max, save_fl):
+
+    ## Need to set it up at the begging
+    set_num_threads(32)
 
     dictionary_of_values = {
         "l_xy": [],
@@ -74,7 +83,7 @@ def collect_times_for_varying_computations(l_xy_max, n_pts_max, save_fl):
     return pandata
 
 def main():
-    sv_file = "/Users/johannesbauer/Documents/Coding/hp_mathematics/timing_results/fractal_runs/cpu_p_4_run.csv"
+    sv_file = "/home/jbauer/code/hp_mathematics/timing_results/cpu_p_32_new.csv"
     out = collect_times_for_varying_computations(100, 500, sv_file)
 
 if __name__ == "__main__":
