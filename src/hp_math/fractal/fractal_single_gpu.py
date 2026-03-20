@@ -1,3 +1,7 @@
+'''
+Code for NUMBA single GPU optimization for fractals.
+'''
+
 import os
 
 import time
@@ -109,7 +113,7 @@ def collect_times_for_varying_computations(l_xy_max, n_pts_max, save_fl):
     return pandata
 
 def main():
-    sv_file = "/home/jbauer/code/hp_mathematics/timing_results/fractal_runs/gpu_global_run_normal_64_8.csv"
+    sv_file = "/home/jbauer/code/hp_mathematics/timing_results/fractal_runs/gpu_global_run_normal_gpu.csv"
     out = collect_times_for_varying_computations(100, 500, sv_file)
 
 if __name__ == "__main__":
