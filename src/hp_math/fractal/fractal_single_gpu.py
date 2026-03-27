@@ -37,7 +37,7 @@ def paralell_fractal_generation(real, imag):
 @cuda.jit
 def compute_gpu_kernel(lims_x, lims_y, d_img = None):
     '''
-    I found a implementation of this that is far better than what I wrote
+    I found a implementation that gives a good start. Adapted it to the code I have now.
     https://developer.nvidia.com/blog/numba-python-cuda-acceleration/
     '''
 
