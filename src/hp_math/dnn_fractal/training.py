@@ -45,7 +45,7 @@ def validation(md, validation_set, epoch, loss_func, sv_model_path, device):
   sv_path = os.path.join(sv_model_path, f"model_{epoch}.params")
 
 
-  torch.save(md.state_dict(), sv_path)
+  #torch.save(md.state_dict(), sv_path)
 
   return ave_loss, ave_acc
 
@@ -64,6 +64,7 @@ def train_model_seq(model, train_set, validation_set, loss_func, optimizer, **kw
 
     lst_of_train_loss = []
     lst_of_val_loss = []
+    lst_of_val_acc = []
 
     place_holder_validation_loss = -1
     diff = 0
@@ -106,13 +107,14 @@ def train_model_seq(model, train_set, validation_set, loss_func, optimizer, **kw
                 break
 
     validation_loss_acc = validation(model, validation_set, epoch, loss_func, sv_model_path, device)
-    lst_of_val_loss.append(validation_loss_acc)
+    lst_of_val_loss.append(validation_loss_acc[0])
+    lst_of_val_acc.append(validation_loss_acc[1])
     train_loss_acc = (total_loss/n_batches, total_acc/n_batches)
     lst_of_train_loss.append(train_loss_acc)
 
     place_holder_validation_loss += validation_loss_acc[0]
 
-    return lst_of_train_loss, lst_of_val_loss, n_batches, loss
+    return lst_of_train_loss, lst_of_val_loss, lst_of_val_acc, n_batches, loss
 
 def main():
     pass

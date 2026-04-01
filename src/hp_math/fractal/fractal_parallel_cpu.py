@@ -86,5 +86,7 @@ def main():
     sv_file = "/home/jbauer/code/hp_mathematics/timing_results/cpu_p_32_new.csv"
     out = collect_times_for_varying_computations(100, 500, sv_file)
 
+
+
 if __name__ == "__main__":
     main()
