@@ -11,6 +11,7 @@ from mlp_model import simple_model
 from dataloader_for_fractal import synthetic_dataset
 from training import train_model_seq
 
+from tqdm.contrib.concurrent import process_map
 
 sv_fl_for_md = "/hp_mathematics/data/models/initial_model.pth"
 base_pth = "/Users/johannesbauer/Documents/Coding"

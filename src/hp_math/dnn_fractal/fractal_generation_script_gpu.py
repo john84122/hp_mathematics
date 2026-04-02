@@ -51,13 +51,18 @@ def training_given_parameters(params):
     try:
         cuda_id = cuda_queue.get(timeout=10)
         device = f"cuda:{cuda_id}"
+
     except:
         print("wait for cuda")
 
     initial_model = load_model(sv_fl_for_md, base_pth)[0]
 
+    initial_model.to(device)
+
     optimizer_sgd = torch.optim.SGD(initial_model.parameters(), lr=lr, momentum=beta)
     train_loss, validation_loss, validation_acc, n_batches, train_acc = train_model_seq(initial_model, train_dataloader, val_dataloader, loss_func, optimizer_sgd, device=device)
+
+    initial_model.cpu()
 
     cuda_queue.put(cuda_id)
 
