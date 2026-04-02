@@ -38,9 +38,9 @@ def validation(md, validation_set, epoch, loss_func, sv_model_path, device):
   ave_loss = loss_term/n_batches_term
   ave_acc = (acc_term/n_batches_term)*100
 
-  print("--- Validation ---")
-  print(f"Epoch: {epoch}, Average Loss: {ave_loss:.5f}, Accuracy: {ave_acc:.5f}%")
-  print()
+  #print("--- Validation ---")
+  #print(f"Epoch: {epoch}, Average Loss: {ave_loss:.5f}, Accuracy: {ave_acc:.5f}%")
+  #print()
 
   sv_path = os.path.join(sv_model_path, f"model_{epoch}.params")
 
@@ -54,7 +54,7 @@ def train_model_seq(model, train_set, validation_set, loss_func, optimizer, **kw
     basePath = kwargs.get("basePath", "cool")
     device = kwargs.get("device", "cpu")
 
-    num_epochs = kwargs.get("num_epochs", 120)
+    num_epochs = kwargs.get("num_epochs", 60)
     sv_model_path = kwargs.get("sv_dir", basePath + os.sep + "lenet_runs")
     max_iter = 500
     max_threshold = 1e-5
@@ -62,19 +62,15 @@ def train_model_seq(model, train_set, validation_set, loss_func, optimizer, **kw
 
     os.makedirs(sv_model_path, exist_ok=True)
 
-    lst_of_train_loss = []
-    lst_of_val_loss = []
-    lst_of_val_acc = []
-
     place_holder_validation_loss = -1
     diff = 0
+    n_batches = 0
 
     for epoch in range(num_epochs):
         model.train()
 
         total_loss = 0
         total_acc = 0
-        n_batches = 0
 
         for batch, (X, y) in enumerate(train_set):
 
@@ -97,7 +93,7 @@ def train_model_seq(model, train_set, validation_set, loss_func, optimizer, **kw
             if batch % 10 == 0:
                 loss_new = loss.item()
                 acc = (compute_accuracy(prediction,  y))*100
-                print(f"Epoch: {epoch}, Batch: {batch}, Loss: {loss_new:.5f}, Accuracy on Batch: {acc:.5f}%, diff: {diff}")
+                #print(f"Epoch: {epoch}, Batch: {batch}, Loss: {loss_new:.5f}, Accuracy on Batch: {acc:.5f}%, diff: {diff}")
 
 
             if n_batches >= max_iter:
@@ -107,14 +103,14 @@ def train_model_seq(model, train_set, validation_set, loss_func, optimizer, **kw
                 break
 
     validation_loss_acc = validation(model, validation_set, epoch, loss_func, sv_model_path, device)
-    lst_of_val_loss.append(validation_loss_acc[0])
-    lst_of_val_acc.append(validation_loss_acc[1])
-    train_loss_acc = (total_loss/n_batches, total_acc/n_batches)
-    lst_of_train_loss.append(train_loss_acc)
+    #lst_of_val_loss.append(validation_loss_acc[0])
+    #lst_of_val_acc.append(validation_loss_acc[1])
+    train_loss, train_acc = (total_loss/n_batches, total_acc/n_batches)
+    #lst_of_train_loss.append(train_loss_acc)
 
     place_holder_validation_loss += validation_loss_acc[0]
 
-    return lst_of_train_loss, lst_of_val_loss, lst_of_val_acc, n_batches, loss
+    return train_loss, validation_loss_acc[0], validation_loss_acc[1], n_batches, train_acc
 
 def main():
     pass

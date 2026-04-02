@@ -1,13 +1,19 @@
 import os
 import torch
+import itertools
 
 import numpy as np
 
 from tqdm import tqdm
+from multiprocessing import Pool
+
 from mlp_model import simple_model
 from dataloader_for_fractal import synthetic_dataset
 from training import train_model_seq
 
+
+sv_fl_for_md = "/hp_mathematics/data/models/initial_model.pth"
+base_pth = "/Users/johannesbauer/Documents/Coding"
 
 def load_data(data_pth, lb_pth):
     dataset = synthetic_dataset(data_pth, lb_pth)
@@ -30,6 +36,19 @@ def load_model(fl = None, bs_path=None):
         return model, bs_path + "/hp_mathematics/data/models/initial_model.pth"
 
     return model, None
+
+def training_given_parameters(params):
+
+    lr_beta, train_dataloader, val_dataloader, loss_func, sv_fl_for_md, base_pth = params
+
+    lr, beta = lr_beta
+
+    initial_model = load_model(sv_fl_for_md, base_pth)[0]
+
+    optimizer_sgd = torch.optim.SGD(initial_model.parameters(), lr=lr, momentum=beta)
+    train_loss, validation_loss, validation_acc, n_batches, train_acc = train_model_seq(initial_model, train_dataloader, val_dataloader, loss_func, optimizer_sgd)
+
+    return train_loss, validation_loss, validation_acc, n_batches, train_acc
 
 def create_fractal(device):
 
@@ -58,29 +77,23 @@ def create_fractal(device):
     lst_of_n_batches = []
     lst_of_train_acc = []
 
+    param_products = list(itertools.product(np.arange(0, 3, 0.05), np.arange(0, 3, 0.05)))
 
-    for lr in tqdm(np.arange(0, 1.2, 0.05)):
-        for beta in np.arange(0, 1.2, 0.05):
-            if first_run:
-                first_run = False
+    param_products_vals = [(k, train_dataloader, val_dataloader, loss_func, sv_fl_for_md, base_pth) for k in param_products]
 
-            else:
-                initial_model = load_model(sv_fl_for_md, base_pth)[0]
+    with Pool(2) as pool:
+        results = pool.map(training_given_parameters, param_products_vals)  
+    
+    lst_of_train_loss = [result[0] for result in results]
+    lst_of_val_loss = [result[1] for result in results]
+    lst_of_n_batches = [result[3] for result in results]
+    lst_of_val_acc = [result[2] for result in results]
+    lst_of_train_acc = [result[4] for result in results]
 
-            optimizer_sgd = torch.optim.SGD(initial_model.parameters(), lr=lr, momentum=beta)
-            train_loss, validation_loss, validation_acc, n_batches, train_acc = train_model_seq(initial_model, train_dataloader, val_dataloader, loss_func, optimizer_sgd)
-
-            lst_of_train_loss.append(train_loss)
-            lst_of_train_acc.append(train_acc)
-            lst_of_val_loss.append(validation_loss)
-            lst_of_val_acc.append(validation_acc)
-            lst_of_n_batches.append(n_batches)
-
-    np.savez(base_pth + "/hp_mathematics/data/synthetic_blobs/training_results_1p5_1p5_0.05.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
+    np.savez(base_pth + "/hp_mathematics/data/synthetic_blobs/training_results_3_3_0.05.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
 
     return lst_of_train_loss, lst_of_val_loss, lst_of_val_acc, lst_of_n_batches, lst_of_train_acc
 
-    #validation(md, validation_set, epoch, loss_func, sv_model_path, device)
 def main():
     create_fractal("cpu")
 
