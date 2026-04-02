@@ -70,7 +70,7 @@ def training_given_parameters(params):
 
 def create_fractal(device):
 
-    base_pth = "/Users/johannesbauer/Documents/Coding"
+    base_pth = "/home/jbauer/code" #"/Users/johannesbauer/Documents/Coding"
 
     dt_fl = base_pth + "/hp_mathematics/data/synthetic_blobs/inputs.npy"
     lb_fl = base_pth + "/hp_mathematics/data/synthetic_blobs/labels.npy"
@@ -100,7 +100,7 @@ def create_fractal(device):
     param_products_vals = [(k, train_dataloader, val_dataloader, loss_func, sv_fl_for_md, base_pth) for k in param_products]
 
     n_gpus = 2
-    n_processes_per_gpu = 1
+    n_processes_per_gpu = 5
 
     for gpu_ids in range(n_gpus):
         for _ in range(n_processes_per_gpu):
