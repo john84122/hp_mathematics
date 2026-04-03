@@ -1,4 +1,5 @@
 import os
+import time
 import torch
 import itertools
 
@@ -10,6 +11,8 @@ from multiprocessing import Pool
 from mlp_model import simple_model
 from dataloader_for_fractal import synthetic_dataset
 from training import train_model_seq
+
+
 
 from tqdm.contrib.concurrent import process_map
 
@@ -96,8 +99,14 @@ def create_fractal(device):
     return lst_of_train_loss, lst_of_val_loss, lst_of_val_acc, lst_of_n_batches, lst_of_train_acc
 
 def main():
+
+    t = time.time()
+
     create_fractal("cpu")
 
+    total = time.time() - t
+
+    print(f"Total time taken: {total:.2f} seconds")
 
 if __name__ == "__main__":
     main()
