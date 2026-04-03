@@ -11,6 +11,8 @@ from mlp_model import simple_model
 from dataloader_for_fractal import synthetic_dataset
 from training import train_model_seq
 
+import time
+
 from tqdm.contrib.concurrent import process_map
 
 sv_fl_for_md = "/hp_mathematics/data/models/initial_model.pth"
@@ -87,8 +89,6 @@ def create_fractal(device):
 
     loss_func = torch.nn.CrossEntropyLoss()
 
-    first_run = True
-
     lst_of_train_loss = []
     lst_of_val_loss = []
     lst_of_val_acc = []
@@ -120,8 +120,15 @@ def create_fractal(device):
     return lst_of_train_loss, lst_of_val_loss, lst_of_val_acc, lst_of_n_batches, lst_of_train_acc
 
 def main():
+
+    t = time.time()
+
     create_fractal("cpu")
 
+    total = time.time() - t
+
+    print()
+    print(f"Total time taken: {total:.2f} seconds")
 
 if __name__ == "__main__":
     main()

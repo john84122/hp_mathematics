@@ -1,4 +1,5 @@
 import os
+import time
 import torch
 
 import numpy as np
@@ -33,7 +34,8 @@ def load_model(fl = None, bs_path=None):
 
 def create_fractal(device):
 
-    base_pth = "/Users/johannesbauer/Documents/Coding"
+    #base_pth = "/Users/johannesbauer/Documents/Coding"
+    base_pth = "/home/jbauer/code/"
 
     dt_fl = base_pth + "/hp_mathematics/data/synthetic_blobs/inputs.npy"
     lb_fl = base_pth + "/hp_mathematics/data/synthetic_blobs/labels.npy"
@@ -59,8 +61,10 @@ def create_fractal(device):
     lst_of_train_acc = []
 
 
-    for lr in tqdm(np.arange(0, 1.2, 0.05)):
-        for beta in np.arange(0, 1.2, 0.05):
+    dim_v = 0.1
+
+    for lr in tqdm(np.arange(0, 0.8, dim_v)):
+        for beta in np.arange(0, 0.8, dim_v):
             if first_run:
                 first_run = False
 
@@ -76,14 +80,20 @@ def create_fractal(device):
             lst_of_val_acc.append(validation_acc)
             lst_of_n_batches.append(n_batches)
 
-    np.savez(base_pth + "/hp_mathematics/data/synthetic_blobs/training_results_1p5_1p5_0.05.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
+    np.savez(base_pth + f"/hp_mathematics/data/synthetic_blobs/training_results_1p5_1p5_{dim_v}_seq.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
 
     return lst_of_train_loss, lst_of_val_loss, lst_of_val_acc, lst_of_n_batches, lst_of_train_acc
 
     #validation(md, validation_set, epoch, loss_func, sv_model_path, device)
 def main():
+
+    t = time.time()
+
     create_fractal("cpu")
 
+    total = time.time() - t
+
+    print(f"Total time taken: {total:.2f} seconds")
 
 if __name__ == "__main__":
     main()
