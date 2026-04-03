@@ -95,11 +95,11 @@ def create_fractal(device):
     lst_of_n_batches = []
     lst_of_train_acc = []
 
-    param_products = list(itertools.product(np.arange(0, 3, 0.05), np.arange(0, 3, 0.05)))
+    param_products = list(itertools.product(np.arange(0, .5, 0.001), np.arange(0, 0.5, 0.001)))
 
     param_products_vals = [(k, train_dataloader, val_dataloader, loss_func, sv_fl_for_md, base_pth) for k in param_products]
 
-    n_gpus = 2
+    n_gpus = 4
     n_processes_per_gpu = 5
 
     for gpu_ids in range(n_gpus):
@@ -115,7 +115,7 @@ def create_fractal(device):
     lst_of_val_acc = [result[2] for result in results]
     lst_of_train_acc = [result[4] for result in results]
 
-    np.savez(base_pth + "/hp_mathematics/data/synthetic_blobs/training_results_3_3_0.05.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
+    np.savez(base_pth + "/hp_mathematics/data/synthetic_blobs/training_results_0p5_0p5_0p001_gpu.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
 
     return lst_of_train_loss, lst_of_val_loss, lst_of_val_acc, lst_of_n_batches, lst_of_train_acc
 
