@@ -1,3 +1,7 @@
+'''
+  In this script, we generate fractals over multiple CPUs. The method we use is using pooling.
+'''
+
 import os
 import time
 import torch
@@ -16,10 +20,19 @@ from training import train_model_seq
 
 from tqdm.contrib.concurrent import process_map
 
+
+## Base Path to where the hp_mathematics folder is as well as the save folder of the model.
 sv_fl_for_md = "/hp_mathematics/data/models/initial_model.pth"
-base_pth = "/Users/johannesbauer/Documents/Coding"
+base_pth = "/home/jbauer/code" #"/Users/johannesbauer/Documents/Coding"
 
 def load_data(data_pth, lb_pth):
+    '''
+    Loads the data from paths to synthetic dataset and makes a pytorch dataloaders.
+    
+    Inputs:
+        - data_pth (str): Path to the synthetic dataset inputs.
+        - lb_pth (str): Path to the synthetic dataset labels.
+    '''
     dataset = synthetic_dataset(data_pth, lb_pth)
     train_set, val_set = torch.utils.data.random_split(dataset, [.8, .2])
     dataloader_train = torch.utils.data.DataLoader(train_set, batch_size=32, shuffle=True)
@@ -28,7 +41,14 @@ def load_data(data_pth, lb_pth):
 
 
 def load_model(fl = None, bs_path=None):
+    '''
+    Loads the model from a specified save file. If no save file is given, it initializes random parameters.
 
+    Inputs:
+        - fl (str): Path to save file fo the model.
+        - bs_path (str): Base path for where the hp_mathematics folder is.
+
+    '''
     model = simple_model(inp_dim=1500, output_dim=3, n_layers=2, width=10)
 
     if fl is not None:
@@ -42,8 +62,21 @@ def load_model(fl = None, bs_path=None):
     return model, None
 
 def training_given_parameters(params):
+    '''
+    The training function that is parallelized over multiple learning rates and momentum pairs.
 
-    lr_beta, train_dataloader, val_dataloader, loss_func, sv_fl_for_md, base_pth = params
+    Inputs:
+        - params (tuple): A tuple containing the learning rate, momentum, train dataloader, validation dataloader, save folder for model, loss function, and base path.
+    '''
+    lr_beta, loss_func, sv_fl_for_md, base_pth = params
+
+    dt_fl = base_pth + "/hp_mathematics/data/synthetic_blobs/inputs.npy"
+    lb_fl = base_pth + "/hp_mathematics/data/synthetic_blobs/labels.npy"
+
+    assert os.path.exists(dt_fl), "The data file does not exist at the specified path."
+    assert os.path.exists(lb_fl), "The labels file does not exist at the specified path."
+
+    train_dataloader, val_dataloader = load_data(dt_fl, lb_fl)
 
     lr, beta = lr_beta
 
@@ -55,19 +88,14 @@ def training_given_parameters(params):
     return train_loss, validation_loss, validation_acc, n_batches, train_acc
 
 def create_fractal(device):
+    '''
+    A function that when called creates the fractal. Input is the device used for producing the fractal.
 
-    base_pth = "/Users/johannesbauer/Documents/Coding"
-
-    dt_fl = base_pth + "/hp_mathematics/data/synthetic_blobs/inputs.npy"
-    lb_fl = base_pth + "/hp_mathematics/data/synthetic_blobs/labels.npy"
-
-    print()
-    print(dt_fl)
-    print()
-    assert os.path.exists(dt_fl), "The data file does not exist at the specified path."
-    assert os.path.exists(lb_fl), "The labels file does not exist at the specified path."
-
-    train_dataloader, val_dataloader = load_data(dt_fl, lb_fl)
+    Inputs:
+    - device (str): The device used for producing the fractal. For this script, only CPU is valid.
+    '''
+    #base_pth = "/Users/johannesbauer/Documents/Coding"
+    base_pth = "/home/jbauer/code/"
 
     initial_model, sv_fl_for_md = load_model(None, base_pth)
 
@@ -81,25 +109,34 @@ def create_fractal(device):
     lst_of_n_batches = []
     lst_of_train_acc = []
 
-    param_products = list(itertools.product(np.arange(0, 3, 0.05), np.arange(0, 3, 0.05)))
+    # Creates the step size.
+    d_v = 0.1
 
-    param_products_vals = [(k, train_dataloader, val_dataloader, loss_func, sv_fl_for_md, base_pth) for k in param_products]
+    # Creates the pairs of learning rates and momentum values.
+    param_products = list(itertools.product(np.arange(0, 0.8, d_v), np.arange(0, 0.8, d_v)))
 
-    with Pool(2) as pool:
+    param_products_vals = [(k, loss_func, sv_fl_for_md, base_pth) for k in param_products]
+
+    # Parallelizes the training over the parameter pairs.
+    with Pool(4) as pool:
         results = pool.map(training_given_parameters, param_products_vals)  
     
+    # Partitions output of parallelized training into separate lists.
     lst_of_train_loss = [result[0] for result in results]
     lst_of_val_loss = [result[1] for result in results]
     lst_of_n_batches = [result[3] for result in results]
     lst_of_val_acc = [result[2] for result in results]
     lst_of_train_acc = [result[4] for result in results]
 
-    np.savez(base_pth + "/hp_mathematics/data/synthetic_blobs/training_results_3_3_0.05.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
+    # saves all the data into a numpy array.
+    np.savez(base_pth + "/hp_mathematics/data/synthetic_blobs/training_results_3_3_0_{d_v}.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
 
     return lst_of_train_loss, lst_of_val_loss, lst_of_val_acc, lst_of_n_batches, lst_of_train_acc
 
 def main():
-
+    '''
+    The main function that is used for running and doing timing of the fractal generation code.
+    '''
     t = time.time()
 
     create_fractal("cpu")
