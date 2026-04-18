@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hp_math"
-description = "Simple script for SAR analysis."
+description = "Simple script for high performance mathematical visualizations."
 readme = "README.md"
 version = "0.0.1"
 

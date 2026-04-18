@@ -68,7 +68,7 @@ def compute_algebraic_starscape(input_lst, scale_val, n_free):
     for poly_form in all_combinatorial_forms:
         root_pairs = root_finding(poly_form)
 
-        lst_of_all_roots += poly_form
+        lst_of_all_roots += root_pairs
     return lst_of_all_roots
 
 def main():
