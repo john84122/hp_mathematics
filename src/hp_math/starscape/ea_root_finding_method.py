@@ -15,10 +15,6 @@ import math
 from numba import cuda
 from tqdm import tqdm
 
-
-griddim = 1,2
-blockdim = 3,4
-
 @cuda.jit(device=True)
 def compute_poly_value(k, coefs, degs):
 
@@ -90,22 +86,21 @@ def check_solutions(initial_guess, new_guess, error):
     diff = new_guess[idx] - initial_guess[idx]
     error[idx] = (diff.real ** 2 + diff.imag ** 2) ** 0.5
 
-def EA_method(polies, initial_vals, coeffs, deg, threads_per_block, max_iter, max_error):
+def EA_method(initial_vals, coeffs, deg, threads_per_block, max_iter, max_error):
     vals_d   = cuda.to_device(initial_vals.astype(np.complex128))
     coeffs_d = cuda.to_device(coeffs.astype(np.complex128))
     degs_d   = cuda.to_device(deg.astype(np.float64))
 
     m = len(initial_vals)
-    n_terms = len(coeffs)
 
     blocks = (m + threads_per_block - 1) // threads_per_block
     griddim   = (blocks,)
     blockdim  = (threads_per_block,)
  
-    final_components = np.zeros(initial_vals.shape)
+    final_components = np.zeros(initial_vals.shape, dtype=np.complex128)
     final_gpu_comp = cuda.to_device(final_components)
 
-    errors_comp = np.zeros(initial_vals.shape, dtype=np.complex128)
+    errors_comp = np.zeros(initial_vals.shape)
     error_gpu = cuda.to_device(errors_comp)
 
     error = 1
@@ -131,7 +126,19 @@ def EA_method(polies, initial_vals, coeffs, deg, threads_per_block, max_iter, ma
     return final_found_roots, iter_val
 
 def main():
-    pass
+    n_roots = 3
+    coeffs = np.array([ 1.0+0j, -1.0+0j], dtype=np.complex128)
+    degs   = np.array([ n_roots,     0.0   ], dtype=np.float64)
+ 
+    angles  = np.linspace(0, 2 * np.pi, n_roots + 1, endpoint=False)[1:]
+    initial = np.exp(1j * angles) * 0.9
+ 
+    print("Initial guesses:", initial)
+    roots, iters = EA_method(initial, coeffs, degs, 64, 1000, max_error=1e-10)
+    print(f"Number of iterations: {iters}")
+    print()
+    print("Roots found :", roots)
+    print("Residuals   :", np.abs(roots**3 - 1))
 
 if __name__ == "__main__":
     main()
