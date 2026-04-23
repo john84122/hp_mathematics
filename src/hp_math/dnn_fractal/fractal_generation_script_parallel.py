@@ -23,7 +23,6 @@ from tqdm.contrib.concurrent import process_map
 
 ## Base Path to where the hp_mathematics folder is as well as the save folder of the model.
 sv_fl_for_md = "/hp_mathematics/data/models/initial_model.pth"
-base_pth = "/home/jbauer/code" #"/Users/johannesbauer/Documents/Coding"
 
 def load_data(data_pth, lb_pth):
     '''
@@ -49,17 +48,18 @@ def load_model(fl = None, bs_path=None):
         - bs_path (str): Base path for where the hp_mathematics folder is.
 
     '''
+
     model = simple_model(inp_dim=1500, output_dim=3, n_layers=2, width=10)
 
     if fl is not None:
         model.load_state_dict(torch.load(fl))
 
+        return model
+
     else:
         torch.save(model.state_dict(), bs_path + "/hp_mathematics/data/models/initial_model.pth")
 
         return model, bs_path + "/hp_mathematics/data/models/initial_model.pth"
-
-    return model, None
 
 def training_given_parameters(params):
     '''
@@ -69,23 +69,19 @@ def training_given_parameters(params):
         - params (tuple): A tuple containing the learning rate, momentum, train dataloader, validation dataloader, save folder for model, loss function, and base path.
     '''
     lr_beta, loss_func, sv_fl_for_md, base_pth = params
-
-    dt_fl = base_pth + "/hp_mathematics/data/synthetic_blobs/inputs.npy"
-    lb_fl = base_pth + "/hp_mathematics/data/synthetic_blobs/labels.npy"
-
-    assert os.path.exists(dt_fl), "The data file does not exist at the specified path."
-    assert os.path.exists(lb_fl), "The labels file does not exist at the specified path."
-
-    train_dataloader, val_dataloader = load_data(dt_fl, lb_fl)
-
+    global train_dataloader, val_dataloader 
     lr, beta = lr_beta
 
-    initial_model = load_model(sv_fl_for_md, base_pth)[0]
+    initial_model = load_model(sv_fl_for_md, base_pth)
 
     optimizer_sgd = torch.optim.SGD(initial_model.parameters(), lr=lr, momentum=beta)
     train_loss, validation_loss, validation_acc, n_batches, train_acc = train_model_seq(initial_model, train_dataloader, val_dataloader, loss_func, optimizer_sgd)
 
     return train_loss, validation_loss, validation_acc, n_batches, train_acc
+
+def worker_init(dt_fl_, lb_fl_):
+    global train_dataloader, val_dataloader
+    train_dataloader, val_dataloader = load_data(dt_fl_, lb_fl_)
 
 def create_fractal(device):
     '''
@@ -95,13 +91,11 @@ def create_fractal(device):
     - device (str): The device used for producing the fractal. For this script, only CPU is valid.
     '''
     #base_pth = "/Users/johannesbauer/Documents/Coding"
-    base_pth = "/home/jbauer/code/"
+    base_pth = "/home/jbauer/code"
 
     initial_model, sv_fl_for_md = load_model(None, base_pth)
 
     loss_func = torch.nn.CrossEntropyLoss()
-
-    first_run = True
 
     lst_of_train_loss = []
     lst_of_val_loss = []
@@ -110,16 +104,20 @@ def create_fractal(device):
     lst_of_train_acc = []
 
     # Creates the step size.
-    d_v = 0.1
+    n_steps = 100
+    scale_val = np.linspace(1/n_steps, 0.8, n_steps)
 
     # Creates the pairs of learning rates and momentum values.
-    param_products = list(itertools.product(np.arange(0, 0.8, d_v), np.arange(0, 0.8, d_v)))
+    param_products = list(itertools.product(scale_val, scale_val))
 
     param_products_vals = [(k, loss_func, sv_fl_for_md, base_pth) for k in param_products]
 
+    dt_fl = base_pth + "/hp_mathematics/data/synthetic_blobs/inputs.npy"
+    lb_fl = base_pth + "/hp_mathematics/data/synthetic_blobs/labels.npy"
+
     # Parallelizes the training over the parameter pairs.
-    with Pool(4) as pool:
-        results = pool.map(training_given_parameters, param_products_vals)  
+    with Pool(4, initializer=worker_init, initargs=(dt_fl, lb_fl)) as pool:
+        results = pool.map(training_given_parameters, param_products_vals)
     
     # Partitions output of parallelized training into separate lists.
     lst_of_train_loss = [result[0] for result in results]
@@ -129,7 +127,7 @@ def create_fractal(device):
     lst_of_train_acc = [result[4] for result in results]
 
     # saves all the data into a numpy array.
-    np.savez(base_pth + "/hp_mathematics/data/synthetic_blobs/training_results_3_3_0_{d_v}.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
+    np.savez(base_pth + f"/hp_mathematics/data/synthetic_blobs/training_results_3_3_0_{n_steps}.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
 
     return lst_of_train_loss, lst_of_val_loss, lst_of_val_acc, lst_of_n_batches, lst_of_train_acc
 

@@ -19,13 +19,12 @@ import time
 
 from tqdm.contrib.concurrent import process_map
 
-# Defines the base path where hp_mathematics is located, save file for where the model is, and a queue for where the devices are located.
-sv_fl_for_md = "/hp_mathematics/data/models/initial_model.pth"
-base_pth = "/Users/johannesbauer/Documents/Coding"
+cuda_queue = None
 
-cuda_queue = Queue()
+def _pool_initializer(q):
 
-
+    global cuda_queue
+    cuda_queue = q
 
 def load_data(data_pth, lb_pth):
     '''
@@ -74,34 +73,36 @@ def training_given_parameters(params):
     '''
 
     try:
-        cuda_id = cuda_queue.get(timeout=10)
-        device = f"cuda:{cuda_id}"
+        cuda_id = cuda_queue.get(timeout=60)
 
     except:
-        print("wait for cuda")
+        raise RuntimeError("Timed out waiting for the device")
+    
+    try:
+        device = f"cuda:{cuda_id}"
+        lr_beta, loss_func, sv_fl_for_md, base_pth = params
 
-    lr_beta, loss_func, sv_fl_for_md, base_pth = params
+        dt_fl = base_pth + "/hp_mathematics/data/synthetic_blobs/inputs.npy"
+        lb_fl = base_pth + "/hp_mathematics/data/synthetic_blobs/labels.npy"
 
-    dt_fl = base_pth + "/hp_mathematics/data/synthetic_blobs/inputs.npy"
-    lb_fl = base_pth + "/hp_mathematics/data/synthetic_blobs/labels.npy"
+        assert os.path.exists(dt_fl), "The data file does not exist at the specified path."
+        assert os.path.exists(lb_fl), "The labels file does not exist at the specified path."
 
-    assert os.path.exists(dt_fl), "The data file does not exist at the specified path."
-    assert os.path.exists(lb_fl), "The labels file does not exist at the specified path."
+        train_dataloader, val_dataloader = load_data(dt_fl, lb_fl)
 
-    train_dataloader, val_dataloader = load_data(dt_fl, lb_fl)
+        lr, beta = lr_beta
 
-    lr, beta = lr_beta
+        initial_model = load_model(sv_fl_for_md, base_pth)[0]
 
-    initial_model = load_model(sv_fl_for_md, base_pth)[0]
+        initial_model.to(device)
 
-    initial_model.to(device)
+        optimizer_sgd = torch.optim.SGD(initial_model.parameters(), lr=lr, momentum=beta)
+        train_loss, validation_loss, validation_acc, n_batches, train_acc = train_model_seq(initial_model, train_dataloader, val_dataloader, loss_func, optimizer_sgd, device=device)
 
-    optimizer_sgd = torch.optim.SGD(initial_model.parameters(), lr=lr, momentum=beta)
-    train_loss, validation_loss, validation_acc, n_batches, train_acc = train_model_seq(initial_model, train_dataloader, val_dataloader, loss_func, optimizer_sgd, device=device)
+        initial_model.cpu()
 
-    initial_model.cpu()
-
-    cuda_queue.put(cuda_id)
+    finally:
+        cuda_queue.put(cuda_id)
 
     print(f"done with: {lr}, {beta}")
 
@@ -126,12 +127,11 @@ def create_fractal():
     lst_of_n_batches = []
     lst_of_train_acc = []
 
-    # Define step size for learning rates and momentum values.
-    d_v = 0.001
+    n_steps = 100
+    scale_val = np.linspace(1/n_steps, 0.8, n_steps)
 
     # Creates the pairs of learning rates and momentum.
-    param_products = list(itertools.product(np.arange(0, 0.3, d_v), np.arange(0, 0.3, d_v)))
-
+    param_products = list(itertools.product(scale_val, scale_val))
     param_products_vals = [(k, loss_func, sv_fl_for_md, base_pth) for k in param_products]
 
     # Defines the number of GPUs being used nad processes run per GPU.
@@ -139,12 +139,15 @@ def create_fractal():
     n_processes_per_gpu = 10
 
     # Creates the paths to the GPUs.
+
+    cuda_queue = Queue()
+
     for gpu_ids in range(n_gpus):
         for _ in range(n_processes_per_gpu):
             cuda_queue.put(gpu_ids)
 
     # Partitions task onto multiple GPUs without overlapping processes on the same GPU.
-    with Pool(n_gpus*n_processes_per_gpu) as pool:
+    with Pool(n_gpus*n_processes_per_gpu, initializer=_pool_initializer, initargs=(cuda_queue,)) as pool:
         results = pool.map(training_given_parameters, param_products_vals)  
     
     lst_of_train_loss = [result[0] for result in results]
@@ -153,7 +156,7 @@ def create_fractal():
     lst_of_val_acc = [result[2] for result in results]
     lst_of_train_acc = [result[4] for result in results]
 
-    np.savez(base_pth + f"/hp_mathematics/data/synthetic_blobs/training_results_0p3_0p3_{d_v}_gpu.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
+    np.savez(base_pth + f"/hp_mathematics/data/synthetic_blobs/training_results_0p3_0p3_{n_steps}_gpu.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
 
     return lst_of_train_loss, lst_of_val_loss, lst_of_val_acc, lst_of_n_batches, lst_of_train_acc
 
