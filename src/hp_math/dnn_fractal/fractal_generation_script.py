@@ -30,7 +30,6 @@ def load_data(data_pth, lb_pth):
     dataloader_val = torch.utils.data.DataLoader(val_set, batch_size=32, shuffle=False)
     return dataloader_train, dataloader_val
 
-
 def load_model(fl = None, bs_path=None):
     '''
     Loads the model from a specified save file. If no save file is given, it initializes random parameters.
@@ -46,12 +45,12 @@ def load_model(fl = None, bs_path=None):
     if fl is not None:
         model.load_state_dict(torch.load(fl))
 
+        return model
+
     else:
         torch.save(model.state_dict(), bs_path + "/hp_mathematics/data/models/initial_model.pth")
 
         return model, bs_path + "/hp_mathematics/data/models/initial_model.pth"
-
-    return model, None
 
 def create_fractal(device):
     '''
@@ -79,12 +78,10 @@ def create_fractal(device):
     train_dataloader, val_dataloader = load_data(dt_fl, lb_fl)
 
     # Does the analysis 
-    initial_model, sv_fl_for_md = load_model(None, base_pth)
+    _, sv_fl_for_md = load_model(None, base_pth)
 
     # Defines the loss function
     loss_func = torch.nn.CrossEntropyLoss()
-
-    first_run = True
 
     lst_of_train_loss = []
     lst_of_val_loss = []
@@ -93,19 +90,20 @@ def create_fractal(device):
     lst_of_train_acc = []
 
 
-    dim_v = 0.1
+    n_steps = 100
 
     # Loops over learning rate and beta values to train the model.
-    for lr in tqdm(np.arange(0, 0.8, dim_v)):
-        for beta in np.arange(0, 0.8, dim_v):
-            if first_run:
-                first_run = False
 
-            else:
-                initial_model = load_model(sv_fl_for_md, base_pth)[0]
+    scale_val = np.linspace(1/n_steps, 0.8, n_steps)
 
-            optimizer_sgd = torch.optim.SGD(initial_model.parameters(), lr=lr, momentum=beta)
-            train_loss, validation_loss, validation_acc, n_batches, train_acc = train_model_seq(initial_model, train_dataloader, val_dataloader, loss_func, optimizer_sgd)
+    for lr in tqdm(scale_val):
+        for beta in scale_val:
+
+            model = load_model(sv_fl_for_md, base_pth)
+
+
+            optimizer_sgd = torch.optim.SGD(model.parameters(), lr=lr, momentum=beta)
+            train_loss, validation_loss, validation_acc, n_batches, train_acc = train_model_seq(model, train_dataloader, val_dataloader, loss_func, optimizer_sgd)
 
             lst_of_train_loss.append(train_loss)
             lst_of_train_acc.append(train_acc)
@@ -114,11 +112,10 @@ def create_fractal(device):
             lst_of_n_batches.append(n_batches)
 
     # Saves output of optimization in a .npz file.
-    np.savez(base_pth + f"/hp_mathematics/data/synthetic_blobs/training_results_1p5_1p5_{dim_v}_seq.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
+    np.savez(base_pth + f"/hp_mathematics/data/synthetic_blobs/training_results_1p5_1p5_{n_steps}_seq.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
 
     return lst_of_train_loss, lst_of_val_loss, lst_of_val_acc, lst_of_n_batches, lst_of_train_acc
 
-    #validation(md, validation_set, epoch, loss_func, sv_model_path, device)
 def main():
     '''
     The main function that is used for running and doing timing of the fractal generation code.
