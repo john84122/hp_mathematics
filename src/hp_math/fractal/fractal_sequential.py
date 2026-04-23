@@ -49,7 +49,7 @@ def time_computation(**kwargs):
 
     return total
 
-def collect_times_for_varying_computations(l_xy_max, n_pts_max, save_fl):
+def collect_times_for_varying_computations(n_pts_max, save_fl):
 
     dictionary_of_values = {
         "l_xy": [],
@@ -58,12 +58,12 @@ def collect_times_for_varying_computations(l_xy_max, n_pts_max, save_fl):
     }
 
     for n_pts in tqdm(range(10, n_pts_max, 10), desc="Number of Points"):
-        for l_x_y in range(1, l_xy_max):
+        l_x_y = 1
 
-            time = time_computation(lims_x = l_x_y, lims_y = l_x_y, n_pts = n_pts)
-            dictionary_of_values["l_xy"].append(l_x_y)
-            dictionary_of_values["n_pts"].append(n_pts)
-            dictionary_of_values["time"].append(time)
+        time = time_computation(lims_x = l_x_y, lims_y = l_x_y, n_pts = n_pts)
+        dictionary_of_values["l_xy"].append(l_x_y)
+        dictionary_of_values["n_pts"].append(n_pts)
+        dictionary_of_values["time"].append(time)
 
     pandata = pd.DataFrame(dictionary_of_values)
 
@@ -74,8 +74,8 @@ def collect_times_for_varying_computations(l_xy_max, n_pts_max, save_fl):
     return pandata
 
 def main():
-    sv_file = "/Users/johannesbauer/Documents/Coding/hp_mathematics/timing_results/fractal_runs/sequential_run.csv"
-    out = collect_times_for_varying_computations(100, 500, sv_file)
+    sv_file = "/Users/johannesbauer/Documents/Coding/hp_mathematics/timing_results/fractal_runs/sequential_run_range_1.csv"
+    out = collect_times_for_varying_computations(500, sv_file)
 
 if __name__ == "__main__":
     main()
