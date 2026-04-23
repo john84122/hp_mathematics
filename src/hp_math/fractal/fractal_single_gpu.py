@@ -4,7 +4,6 @@ Code for NUMBA single GPU optimization for fractals.
 
 import os
 
-import time
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -16,26 +15,23 @@ from numba import cuda
 from tqdm import tqdm
 
 @cuda.jit(device=True)
-def paralell_fractal_generation(real, imag):
+def paralell_fractal_generation(real, imag, escape_radius, n_terms):
 
     c = real + (imag*1j)
 
-    N = 100
-    k = 100
-
     c_const = -2.1+ (-1.35j)
 
-    iter = 0
-    while (iter < N) and ((c.real**2) + (c.imag**2) < k):
+    iter_val = 0
+    while (iter_val < n_terms) and ((c.real**2) + (c.imag**2) < escape_radius):
         c_re = math.sin(c.real)*math.cosh(c.imag)
         c_imag = math.cos(c.real)*math.sinh(c.imag)
         c = c_re + (c_imag*1j) + c_const
-        iter += 1
+        iter_val += 1
 
-    return iter
+    return iter_val
 
 @cuda.jit
-def compute_gpu_kernel(lims_x, lims_y, d_img = None):
+def compute_gpu_kernel(lims_x, lims_y, d_img, n_terms, escape_rad):
     '''
     I found a implementation that gives a good start. Adapted it to the code I have now.
     https://developer.nvidia.com/blog/numba-python-cuda-acceleration/
@@ -54,12 +50,13 @@ def compute_gpu_kernel(lims_x, lims_y, d_img = None):
 
     for x in range(startX, width, gridX):
         real = -lims_x + x * pixel_size_x
+
         for y in range(startY, height, gridY):
             imag = -lims_y + y * pixel_size_y 
-            d_img[y, x] = paralell_fractal_generation(real, imag)
+            iter_val = paralell_fractal_generation(real, imag, escape_rad, n_terms)
+            d_img[y, x] = min(iter_val* 255//max(n_terms, 1), 255)
 
-
-def gpu_computation(lims_x, lims_y, n_pts):
+def gpu_computation(lims_x, lims_y, n_pts, escape_radius):
 
     d_image = np.zeros((n_pts, n_pts), dtype = np.uint8)
 
@@ -70,25 +67,19 @@ def gpu_computation(lims_x, lims_y, n_pts):
     end = cuda.event(timing=True)
 
     d_image = cuda.to_device(d_image)
-    start.record()
-    compute_gpu_kernel[griddim, blockdim](lims_x, lims_y, d_image) 
-    cuda.synchronize()
-    end.record()
-    out = d_image.copy_to_host()
 
-    # For Checking material
-    #plt.imshow(out.astype(float))
-    #print(np.unique(out))
-    #plt.savefig("sine_wave_new.png", bbox_inches='tight')
-    #plt.show()
-    #plt.close()
-    #assert 1 == 0
+    start.record()
+    compute_gpu_kernel[griddim, blockdim](lims_x, lims_y, d_image, n_pts, escape_radius) 
+    end.record()
+    end.synchronize()
+
+    out = d_image.copy_to_host()
 
     dt = cuda.event_elapsed_time(start, end)
 
     return dt
 
-def collect_times_for_varying_computations(l_xy_max, n_pts_max, save_fl):
+def collect_times_for_varying_computations(l_xy, n_pts_max, save_fl, escape_radius):
 
     dictionary_of_values = {
         "l_xy": [],
@@ -97,12 +88,11 @@ def collect_times_for_varying_computations(l_xy_max, n_pts_max, save_fl):
     }
 
     for n_pts in tqdm(range(10, n_pts_max, 10), desc="Number of Points"):
-        for l_x_y in range(1, l_xy_max):
 
-            time = gpu_computation(lims_x = l_xy_max, lims_y = l_xy_max, n_pts = n_pts)
-            dictionary_of_values["l_xy"].append(l_x_y)
-            dictionary_of_values["n_pts"].append(n_pts)
-            dictionary_of_values["time"].append(time)
+        time_elapsed = gpu_computation(lims_x = l_xy, lims_y = l_xy, n_pts = n_pts, escape_radius=escape_radius)
+        dictionary_of_values["l_xy"].append(l_xy)
+        dictionary_of_values["n_pts"].append(n_pts)
+        dictionary_of_values["time"].append(time_elapsed)
 
     pandata = pd.DataFrame(dictionary_of_values)
 
@@ -114,7 +104,7 @@ def collect_times_for_varying_computations(l_xy_max, n_pts_max, save_fl):
 
 def main():
     sv_file = "/home/jbauer/code/hp_mathematics/timing_results/fractal_runs/gpu_global_run_normal_gpu.csv"
-    out = collect_times_for_varying_computations(100, 500, sv_file)
+    out = collect_times_for_varying_computations(100, 500, sv_file, 100, )
 
 if __name__ == "__main__":
     main()
