@@ -1,7 +1,11 @@
 import numpy as np
+import pandas as pd
+
 from itertools import product
 from math import gcd
 from hp_math.starscape.ea_root_finding_method import EA_method
+#from hp_math.starscape.ea_root_finding_method import dk_method
+
 
 import time
 
@@ -81,8 +85,8 @@ def pooling_function(input_poly):
 
     n_roots = np.max(deg_lst)
     angles  = np.linspace(0, 2 * np.pi, n_roots + 1, endpoint=False)[1:]
-    initial = np.exp(1j * angles) * 0.9
-    root_pairs = EA_method(initial, coeff_arr, deg_arr, 64, 200, 1e-8)
+    initial = np.exp(1j * angles) * 2
+    root_pairs = EA_method(initial, coeff_arr, deg_arr, 64, 300, 1e-8)
 
     return root_pairs
 
@@ -93,19 +97,59 @@ def compute_algebraic_starscape(input_lst, scale_val, n_free):
     lst_of_all_roots = []
 
 
-    with Pool(3) as p:
+    with Pool(4) as p:
         lst_of_all_roots = p.map(pooling_function, all_combinatorial_forms)
 
     return lst_of_all_roots
 
+def compute_poly_form_all_free(deg):
+
+    poly_form = []
+
+    poly_form += [("v", deg), ("v", deg//2), (1, 0)]
+
+    #for k in range(deg + 1):
+    #    poly_form.append(("v", k))
+
+    return poly_form
+
+def timing_algebraic_starscape(sv_fl):
+    dictionary = {
+        "timing": [],
+        "scale_val": [],
+        "degree": [],
+        "number_of_roots_found": []
+    }
+
+    relevant_deg = list(range(2, 14))
+    for deg in relevant_deg:
+        
+        poly_form = compute_poly_form_all_free(deg)
+        
+        for scale in [1]:
+            time_start = time.time()
+
+            rts = compute_algebraic_starscape(poly_form, scale, deg+1)
+            time_end = time.time() - time_start
+
+            dictionary["timing"].append(time_end)
+            dictionary["scale_val"].append(scale)
+            dictionary["degree"].append(deg)
+            dictionary["number_of_roots_found"].append(len(rts))
+
+            print(f"Done with scale: {scale}.")
+            print()
+
+    pd_of_res = pd.DataFrame(dictionary)
+
+    pd_of_res.to_csv(sv_fl)
+
+    print("Saved and Done")
+
 def main():
-    input_form = [("v", 3),("v", 2), ("v", 1), ("v", 0)]
+    sv_file = "/home/jbauer/code/hp_mathematics/timing_results/algebraic_starscape_runs/gpu_alg_4_ea.csv"
 
-    out = time.time()
-
-    out_starscape = compute_algebraic_starscape(input_form, scale_val=3, n_free=4)
-
-    print("Timing:", time.time() - out)
+    timing_algebraic_starscape(sv_file)
 
 if __name__ == "__main__":
     main()

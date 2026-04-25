@@ -87,8 +87,10 @@ def compute_poly_form_all_free(deg):
 
     poly_form = []
 
-    for k in range(deg + 1):
-        poly_form.append(("v", k))
+    poly_form += [("v", deg), ("v", deg//2), (1, 0)]
+
+    #for k in range(deg + 1):
+    #    poly_form.append(("v", k))
 
     return poly_form
 
@@ -100,13 +102,12 @@ def timing_algebraic_starscape(sv_fl):
         "number_of_roots_found": []
     }
 
-    relevant_deg = [3, 5, 10, 15] + list(range(100, 1000, 100))
-
+    relevant_deg = list(range(2, 14))
     for deg in relevant_deg:
         
         poly_form = compute_poly_form_all_free(deg)
         
-        for scale in [2]:
+        for scale in [1]:
             time_start = time.time()
 
             rts = compute_algebraic_starscape(poly_form, scale, deg+1)

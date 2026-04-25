@@ -1,4 +1,8 @@
+import time
+
 import numpy as np
+import pandas as pd
+
 from itertools import product
 from math import gcd
 from multiprocessing import Pool
@@ -64,7 +68,7 @@ def gcd_array(arr):
 
 def root_finding(poly):
 
-    if gcd(poly) != 1:
+    if gcd(*poly) != 1:
         return None
 
     length_of_poly = len(poly)
@@ -78,19 +82,75 @@ def root_finding(poly):
     lst_of_roots = [(r, deg, scale) for r in roots if r.imag != 0]
     return lst_of_roots
 
+def compute_poly_form_all_free(deg):
+
+    poly_form = []
+
+    poly_form += [("v", deg), ("v", deg//2), (1, 0)]
+
+    #for k in range(deg + 1):
+    #    poly_form.append(("v", k))
+
+    return poly_form
+
 def compute_algebraic_starscape(input_lst, scale_val, n_free):
     
     all_combinatorial_forms = form_combinatoric_forms(input_lst, n_free, scale_val)
 
-    with Pool(3) as p:
+    with Pool(32) as p:
         lst_of_all_roots = p.map(root_finding, all_combinatorial_forms)
 
     return lst_of_all_roots
 
-def main():
-    input_form = [("v", 10),("v", 3),("v", 2), ("v", 1), ("v", 0)]
 
-    out_starscape = compute_algebraic_starscape(input_form, scale_val=3, n_free=5)
+def compute_poly_form_all_free(deg):
+
+    poly_form = []
+
+    poly_form += [("v", deg), ("v", deg//2), (1, 0)]
+
+    #for k in range(deg + 1):
+    #    poly_form.append(("v", k))
+
+    return poly_form
+
+def timing_algebraic_starscape(sv_fl):
+    dictionary = {
+        "timing": [],
+        "scale_val": [],
+        "degree": [],
+        "number_of_roots_found": []
+    }
+
+    relevant_deg = list(range(2, 14))
+    for deg in relevant_deg:
+        
+        poly_form = compute_poly_form_all_free(deg)
+        
+        for scale in [1]:
+            time_start = time.time()
+
+            rts = compute_algebraic_starscape(poly_form, scale, deg+1)
+            time_end = time.time() - time_start
+
+            dictionary["timing"].append(time_end)
+            dictionary["scale_val"].append(scale)
+            dictionary["degree"].append(deg)
+            dictionary["number_of_roots_found"].append(len(rts))
+
+            print(f"Done with scale: {scale}.")
+            print()
+
+    pd_of_res = pd.DataFrame(dictionary)
+
+    pd_of_res.to_csv(sv_fl)
+
+    print("Saved and Done")
+
+def main():
+    sv_file = "/home/jbauer/code/hp_mathematics/timing_results/algebraic_starscape_runs/par_32_alg.csv"
+
+    timing_algebraic_starscape(sv_file)
 
 if __name__ == "__main__":
     main()
