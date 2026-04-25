@@ -15,4 +15,8 @@ src/hp_math/dnn_fractal/training.py
 src/hp_math/fractal/fractal_parallel_cpu.py
 src/hp_math/fractal/fractal_sequential.py
 src/hp_math/fractal/fractal_single_gpu.py
+src/hp_math/starscape/alg_starscape_gpu.py
+src/hp_math/starscape/alg_starscape_multi_cpu.py
+src/hp_math/starscape/dk_root_finding_method.py
+src/hp_math/starscape/ea_root_finding_method.py
 src/hp_math/starscape/sequential_alg_starscape.py

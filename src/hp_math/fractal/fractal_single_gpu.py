@@ -103,8 +103,8 @@ def collect_times_for_varying_computations(l_xy, n_pts_max, save_fl, escape_radi
     return pandata
 
 def main():
-    sv_file = "/home/jbauer/code/hp_mathematics/timing_results/fractal_runs/gpu_global_run_normal_gpu.csv"
-    out = collect_times_for_varying_computations(100, 500, sv_file, 100, )
+    sv_file = "/home/jbauer/code/hp_mathematics/timing_results/fractal_runs/gpu_global_run_normal_gpu_100k.csv"
+    out = collect_times_for_varying_computations(1, 100000, sv_file, 100)
 
 if __name__ == "__main__":
     main()

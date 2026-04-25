@@ -1,6 +1,13 @@
 import numpy as np
 from itertools import product
 from math import gcd
+from hp_math.starscape.ea_root_finding_method import EA_method
+
+import time
+
+from multiprocessing import Pool
+
+from tqdm import tqdm
 
 import cupy as cp
 
@@ -18,27 +25,28 @@ def convert_list_to_poly(poly_lst):
     
     return base_poly
 
-def fill_free_variable(int_lst, general_form):
+def fill_free_variable(int_lst, input_lst):
     
     idx_for_ints = 0
-    val_lst = []
-    for idx, k in enumerate(general_form):
-        if k == "v":
-            val_lst.append(int_lst[idx_for_ints])
+    coef_lst = []
+    deg_lst = []
+    for k in input_lst:
+        if k[0] == "v":
+            coef_lst.append(int_lst[idx_for_ints])
+            deg_lst.append(k[1])
             idx_for_ints += 1
         else:
-            val_lst.append(k)
+            coef_lst.append(k[0])
+            deg_lst.append(k[1])
 
 
-    return val_lst
+    return coef_lst,deg_lst
 
 def form_combinatoric_forms(input_lst, n_free, scale_val):
 
     all_free_values = list(range(-scale_val, scale_val + 1))
 
-    general_form = convert_list_to_poly(input_lst)
-
-    lst_of_polynomials = [fill_free_variable(int_lst, general_form) for int_lst in product(all_free_values, repeat = n_free)]
+    lst_of_polynomials = [fill_free_variable(int_lst, input_lst) for int_lst in product(all_free_values, repeat = n_free)]
 
     return lst_of_polynomials
             
@@ -65,22 +73,39 @@ def root_finding(poly):
     lst_of_roots = [(r, deg, scale) for r in roots if r.imag != 0]
     return lst_of_roots
 
+def pooling_function(input_poly):
+    coeff_lst, deg_lst = input_poly
+
+    coeff_arr = np.array(coeff_lst)
+    deg_arr = np.array(deg_lst)
+
+    n_roots = np.max(deg_lst)
+    angles  = np.linspace(0, 2 * np.pi, n_roots + 1, endpoint=False)[1:]
+    initial = np.exp(1j * angles) * 0.9
+    root_pairs = EA_method(initial, coeff_arr, deg_arr, 64, 200, 1e-8)
+
+    return root_pairs
+
 def compute_algebraic_starscape(input_lst, scale_val, n_free):
     
     all_combinatorial_forms = form_combinatoric_forms(input_lst, n_free, scale_val)
 
     lst_of_all_roots = []
 
-    for poly_form in all_combinatorial_forms:
 
-        root_pairs = root_finding(poly_form)
-
-        lst_of_all_roots += root_pairs
+    with Pool(3) as p:
+        lst_of_all_roots = p.map(pooling_function, all_combinatorial_forms)
 
     return lst_of_all_roots
 
 def main():
-    pass
+    input_form = [("v", 3),("v", 2), ("v", 1), ("v", 0)]
+
+    out = time.time()
+
+    out_starscape = compute_algebraic_starscape(input_form, scale_val=3, n_free=4)
+
+    print("Timing:", time.time() - out)
 
 if __name__ == "__main__":
     main()

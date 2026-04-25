@@ -84,8 +84,8 @@ def collect_times_for_varying_computations(n_pts_max, save_fl):
     return pandata
 
 def main():
-    sv_file = "/home/jbauer/code/hp_mathematics/timing_results/cpu_p_32_new.csv"
-    out = collect_times_for_varying_computations(500, sv_file)
+    sv_file = "/home/jbauer/code/hp_mathematics/timing_results/cpu_npts_1500_c32.csv"
+    out = collect_times_for_varying_computations(1500, sv_file)
 
 
 

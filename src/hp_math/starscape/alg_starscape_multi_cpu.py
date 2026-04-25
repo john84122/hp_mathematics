@@ -90,7 +90,7 @@ def compute_algebraic_starscape(input_lst, scale_val, n_free):
 def main():
     input_form = [("v", 10),("v", 3),("v", 2), ("v", 1), ("v", 0)]
 
-    out_starscape = compute_algebraic_starscape(input_form, scale_val=10, n_free=5)
+    out_starscape = compute_algebraic_starscape(input_form, scale_val=3, n_free=5)
 
 if __name__ == "__main__":
     main()
