@@ -5,6 +5,8 @@ import pandas as pd
 from itertools import product
 from math import gcd
 
+from tqdm import tqdm
+
 import time
 
 def convert_list_to_poly(poly_lst):
@@ -127,10 +129,36 @@ def timing_algebraic_starscape(sv_fl):
 
     print("Saved and Done")
 
-def main():
-    sv_file = "/home/jbauer/code/hp_mathematics/timing_results/algebraic_starscape_runs/sequential_alg.csv"
+def timing_algebraic_starscape_root_finding(sv_fl):
+    dictionary = {
+        "timing": [],
+        "degree": [],
+        "number_of_roots_found": []
+    }
 
-    timing_algebraic_starscape(sv_file)
+    relevant_deg = list(range(10, 1500, 10))
+    for deg in tqdm(relevant_deg):
+
+
+        time_start = time.time()
+
+        rts = root_finding(list(np.ones(deg, dtype=int)))
+        time_end = time.time() - time_start
+
+        dictionary["timing"].append(time_end)
+        dictionary["degree"].append(deg)
+        dictionary["number_of_roots_found"].append(len(rts))
+
+    pd_of_res = pd.DataFrame(dictionary)
+
+    pd_of_res.to_csv(sv_fl)
+
+    print("Saved and Done")
+
+def main():
+    sv_file = "/home/jbauer/code/hp_mathematics/timing_results/algebraic_starscape_runs/sequential_alg_roots.csv"
+
+    timing_algebraic_starscape_root_finding(sv_file)
 
 if __name__ == "__main__":
     main()

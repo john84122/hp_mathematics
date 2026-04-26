@@ -90,7 +90,7 @@ def create_fractal(device):
     lst_of_train_acc = []
 
 
-    n_steps = 100
+    n_steps = 10
 
     # Loops over learning rate and beta values to train the model.
 
@@ -112,7 +112,7 @@ def create_fractal(device):
             lst_of_n_batches.append(n_batches)
 
     # Saves output of optimization in a .npz file.
-    np.savez(base_pth + f"/hp_mathematics/data/synthetic_blobs/training_results_1p5_1p5_{n_steps}_seq.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
+    #np.savez(base_pth + f"/hp_mathematics/data/synthetic_blobs/training_results_1p5_1p5_{n_steps}_seq.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
 
     return lst_of_train_loss, lst_of_val_loss, lst_of_val_acc, lst_of_n_batches, lst_of_train_acc
 

@@ -127,7 +127,7 @@ def create_fractal():
     lst_of_n_batches = []
     lst_of_train_acc = []
 
-    n_steps = 100
+    n_steps = 500
     scale_val = np.linspace(1/n_steps, 0.8, n_steps)
 
     # Creates the pairs of learning rates and momentum.
@@ -156,7 +156,7 @@ def create_fractal():
     lst_of_val_acc = [result[2] for result in results]
     lst_of_train_acc = [result[4] for result in results]
 
-    np.savez(base_pth + f"/hp_mathematics/data/synthetic_blobs/training_results_0p3_0p3_{n_steps}_gpu.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
+    np.savez(base_pth + f"/hp_mathematics/data/synthetic_blobs/training_results_new_{n_steps}_gpu.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
 
     return lst_of_train_loss, lst_of_val_loss, lst_of_val_acc, lst_of_n_batches, lst_of_train_acc
 

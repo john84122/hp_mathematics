@@ -4,7 +4,7 @@ import pandas as pd
 from itertools import product
 from math import gcd
 from hp_math.starscape.ea_root_finding_method import EA_method
-#from hp_math.starscape.ea_root_finding_method import dk_method
+#from hp_math.starscape.dk_root_finding_method import dk_method
 
 
 import time
@@ -121,7 +121,7 @@ def timing_algebraic_starscape(sv_fl):
         "number_of_roots_found": []
     }
 
-    relevant_deg = list(range(2, 14))
+    relevant_deg = [100, 500, 1000]#list(range(2, 5))
     for deg in relevant_deg:
         
         poly_form = compute_poly_form_all_free(deg)
@@ -146,10 +146,36 @@ def timing_algebraic_starscape(sv_fl):
 
     print("Saved and Done")
 
-def main():
-    sv_file = "/home/jbauer/code/hp_mathematics/timing_results/algebraic_starscape_runs/gpu_alg_4_ea.csv"
+def timing_algebraic_starscape_root_finding(sv_fl):
+    dictionary = {
+        "timing": [],
+        "degree": [],
+        "number_of_roots_found": []
+    }
 
-    timing_algebraic_starscape(sv_file)
+    relevant_deg = list(range(10, 1500, 10))
+    for deg in tqdm(relevant_deg):
+
+
+        time_start = time.time()
+
+        rts = pooling_function((list(np.ones(deg+1, dtype=int)), list(range(deg+1))))
+        time_end = time.time() - time_start
+
+        dictionary["timing"].append(time_end)
+        dictionary["degree"].append(deg)
+        dictionary["number_of_roots_found"].append(len(rts))
+
+    pd_of_res = pd.DataFrame(dictionary)
+
+    pd_of_res.to_csv(sv_fl)
+
+    print("Saved and Done")
+
+def main():
+    sv_file = "/home/jbauer/code/hp_mathematics/timing_results/algebraic_starscape_runs/gpu_alg_4_dk_large_rts.csv"
+
+    timing_algebraic_starscape_root_finding(sv_file)
 
 if __name__ == "__main__":
     main()

@@ -104,7 +104,7 @@ def create_fractal(device):
     lst_of_train_acc = []
 
     # Creates the step size.
-    n_steps = 100
+    n_steps = 20
     scale_val = np.linspace(1/n_steps, 0.8, n_steps)
 
     # Creates the pairs of learning rates and momentum values.
@@ -116,7 +116,7 @@ def create_fractal(device):
     lb_fl = base_pth + "/hp_mathematics/data/synthetic_blobs/labels.npy"
 
     # Parallelizes the training over the parameter pairs.
-    with Pool(4, initializer=worker_init, initargs=(dt_fl, lb_fl)) as pool:
+    with Pool(16, initializer=worker_init, initargs=(dt_fl, lb_fl)) as pool:
         results = pool.map(training_given_parameters, param_products_vals)
     
     # Partitions output of parallelized training into separate lists.
@@ -127,7 +127,7 @@ def create_fractal(device):
     lst_of_train_acc = [result[4] for result in results]
 
     # saves all the data into a numpy array.
-    np.savez(base_pth + f"/hp_mathematics/data/synthetic_blobs/training_results_3_3_0_{n_steps}.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
+    np.savez(base_pth + f"/hp_mathematics/data/synthetic_blobs/training_results_{n_steps}.npz", train_loss=np.array(lst_of_train_loss), train_acc=np.array(lst_of_train_acc), val_loss=np.array(lst_of_val_loss), val_acc=np.array(lst_of_val_acc), n_batches=np.array(lst_of_n_batches))
 
     return lst_of_train_loss, lst_of_val_loss, lst_of_val_acc, lst_of_n_batches, lst_of_train_acc
 

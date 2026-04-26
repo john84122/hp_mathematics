@@ -55,16 +55,6 @@ def find_max_degree(poly):
 
     return degree
 
-@njit
-def gcd_array(arr):
-
-    result = arr[0]
-    for i in range(1, len(arr)):
-        a, b = result, arr[i]
-        while b:
-            a, b = b, a % b
-        result = a
-    return abs(result)
 
 def root_finding(poly):
 
