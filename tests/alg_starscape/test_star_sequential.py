@@ -1,5 +1,5 @@
 
-from hp_math.starscape.sequential_alg_starscape import *
+from hp_math.starscape.alg_starscape_sequential import *
 
 def test_finding_max_deg():
     poly_1 = [0, 12, 342, 2]

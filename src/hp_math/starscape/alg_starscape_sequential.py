@@ -1,4 +1,6 @@
-
+'''
+Computes algebraic starscapes and times it.
+'''
 import numpy as np
 import pandas as pd
 
